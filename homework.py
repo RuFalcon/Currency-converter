@@ -25,7 +25,7 @@ class Calculator:
     def get_week_stats(self):
         result = 0
         for record in self.records:
-            if self.now.date() - dt.timedelta(days=7) <= record.date < self.now.date() + dt.timedelta(days=1):
+            if self.now.date() - dt.timedelta(days=7) <= record.date <= self.now.date():
                 result += record.amount
 
         return result
