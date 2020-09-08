@@ -6,76 +6,79 @@ class Calculator:
         self.limit = limit
         self.records = []
 
-    now = dt.datetime.now()
-
-    # Сохраняем новую запись объекта Record
     def add_record(self, record):
+        """Сохраняем новую запись объекта Record"""
         self.records.append(record)
 
-    # Получаем траты за сегодня числом(integer)
     def get_today_stats(self):
-        result = 0
-        for record in self.records:
-            if record.date == self.now.date():
-                result += record.amount
-
+        """Получаем траты за сегодня числом(integer)"""
+        result = sum([record.amount for record in self.records if record.date == dt.date.today()])
         return result
 
-    # Получаем траты за неделю числом(integer)
     def get_week_stats(self):
-        result = 0
-        for record in self.records:
-            if self.now.date() - dt.timedelta(days=7) <= record.date <= self.now.date():
-                result += record.amount
-
+        """Получаем траты за неделю числом(integer)"""
+        today = dt.date.today()
+        week_ago = dt.date.today() - dt.timedelta(days=7)
+        result = sum([record.amount for record in self.records if week_ago <= record.date <= today])
         return result
+
+    def get_balance(self):
+        return self.limit - self.get_today_stats()
 
 
 class CaloriesCalculator(Calculator):
-    # Узнаём не превышен ли объём калорий за сегодня
-    def get_calories_remained(self):
-        calories_today = self.get_today_stats()
-        calories_can_eat = self.limit - calories_today
+    """Узнаём не превышен ли объём калорий за сегодня"""
 
-        if calories_today < self.limit:
-            return f'Сегодня можно съесть что-нибудь ещё, но с общей калорийностью не более {calories_can_eat} кКал'
+    def get_calories_remained(self):
+        calories_can_eat = self.get_balance()
+
+        if calories_can_eat > 0:
+            result = f'Сегодня можно съесть что-нибудь ещё, ' \
+                     f'но с общей калорийностью не более {calories_can_eat} кКал'
         else:
-            return 'Хватит есть!'
+            result = 'Хватит есть!'
+
+        return result
 
 
 class CashCalculator(Calculator):
-    # Текущие курсы валют
+    """Текущие курсы валют"""
     USD_RATE = 76.08
     EURO_RATE = 89.94
 
-    # Узнаём сколько осталось на счету
-    def get_today_cash_remained(self, currency):
+    def get_currency_cash(self, currency_rate):
+        return round(abs(self.get_balance() / currency_rate), 2)
 
-        cash_today = self.get_today_stats()
-        # Узнаём остаток или долг, округляем до положительного числа для правильного вывода
-        cash_today_remained = abs(self.limit - cash_today)
+    def get_today_cash_remained(self, abbr):
+        """Узнаём сколько осталось на счету"""
+        cash_today_remained = self.get_balance()
 
-        # Фильтруем вывод в зависимости от валюты
-        if currency == 'usd':
-            cash_today_remained = cash_today_remained / self.USD_RATE
-            currency = 'USD'
-        elif currency == 'eur':
-            cash_today_remained = cash_today_remained / self.EURO_RATE
-            currency = 'Euro'
+        currency_dict = {
+            'usd': {'rate': self.USD_RATE, 'currency': 'USD'},
+            'eur': {'rate': self.EURO_RATE, 'currency': 'Euro'},
+            'rub': {'rate': 1, 'currency': 'руб'},
+        }
+
+        currency_cash = self.get_currency_cash(currency_dict[abbr]["rate"])
+        abbreviation = currency_dict[abbr]["currency"]
+
+        if cash_today_remained > 0:
+            result = f'На сегодня осталось {currency_cash} {abbreviation}'
+        elif cash_today_remained == 0:
+            result = 'Денег нет, держись'
         else:
-            currency = 'руб'
+            result = f'Денег нет, держись: твой долг - {currency_cash} {abbreviation}'
 
-        if cash_today < self.limit:
-            return f'На сегодня осталось {cash_today_remained:.2f} {currency}'
-        elif cash_today == self.limit:
-            return 'Денег нет, держись'
-        else:
-            return f'Денег нет, держись: твой долг - {cash_today_remained:.2f} {currency}'
+        return result
 
 
-# Класс делающий запись трат за конкретную дату
 class Record:
-    def __init__(self, amount, comment, date=dt.datetime.today().strftime("%d.%m.%Y")):
+    """Класс делающий запись трат за конкретную дату"""
+
+    def __init__(self, amount, comment, date=None):
         self.amount = amount
         self.comment = comment
-        self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
+        if date != None:
+            self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
+        else:
+            self.date = dt.date.today()
