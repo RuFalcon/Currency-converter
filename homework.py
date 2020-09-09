@@ -13,7 +13,13 @@ class Calculator:
     def get_today_stats(self):
         """Получаем траты за сегодня числом(integer)"""
         today = dt.date.today()
-        result = sum([record.amount for record in self.records if record.date == today])
+        result = sum(
+            [
+                record.amount
+                for record in self.records
+                if record.date == today
+            ]
+        )
         return result
 
     def get_week_stats(self):
@@ -41,7 +47,7 @@ class CaloriesCalculator(Calculator):
 
         if calories_can_eat > 0:
             result = (
-                f"Сегодня можно съесть что-нибудь ещё, "
+                "Сегодня можно съесть что-нибудь ещё, "
                 f"но с общей калорийностью не более {calories_can_eat} кКал"
             )
         else:
@@ -56,12 +62,14 @@ class CashCalculator(Calculator):
     USD_RATE = 76.08
     EURO_RATE = 89.94
 
-    def get_currency_cash(self, currency_rate):
-        return round(abs(self.get_balance() / currency_rate), 2)
+    def get_currency_cash(self, cash_today_remained, currency_rate):
+        return round(abs(cash_today_remained / currency_rate), 2)
 
     def get_today_cash_remained(self, abbr):
         """Узнаём сколько осталось на счету"""
         cash_today_remained = self.get_balance()
+        if cash_today_remained == 0:
+            return "Денег нет, держись"
 
         currency_dict = {
             "usd": [self.USD_RATE, "USD"],
@@ -69,15 +77,13 @@ class CashCalculator(Calculator):
             "rub": [1, "руб"],
         }
 
-        currency_cash, abbreviation = currency_dict[abbr]
-        currency_cash = self.get_currency_cash(currency_cash)
+        currency_rate, abbreviation = currency_dict[abbr]
+        currency_cash = self.get_currency_cash(cash_today_remained, currency_rate)
 
-        if cash_today_remained == 0:
-            return "Денег нет, держись"
         if cash_today_remained > 0:
             return f"На сегодня осталось {currency_cash} {abbreviation}"
-        if cash_today_remained < 0:
-            return f"Денег нет, держись: твой долг - {currency_cash} {abbreviation}"
+
+        return f"Денег нет, держись: твой долг - {currency_cash} {abbreviation}"
 
 
 class Record:
