@@ -12,14 +12,21 @@ class Calculator:
 
     def get_today_stats(self):
         """Получаем траты за сегодня числом(integer)"""
-        result = sum([record.amount for record in self.records if record.date == dt.date.today()])
+        today = dt.date.today()
+        result = sum([record.amount for record in self.records if record.date == today])
         return result
 
     def get_week_stats(self):
         """Получаем траты за неделю числом(integer)"""
         today = dt.date.today()
         week_ago = dt.date.today() - dt.timedelta(days=7)
-        result = sum([record.amount for record in self.records if week_ago <= record.date <= today])
+        result = sum(
+            [
+                record.amount
+                for record in self.records
+                if week_ago <= record.date <= today
+            ]
+        )
         return result
 
     def get_balance(self):
@@ -33,16 +40,19 @@ class CaloriesCalculator(Calculator):
         calories_can_eat = self.get_balance()
 
         if calories_can_eat > 0:
-            result = f'Сегодня можно съесть что-нибудь ещё, ' \
-                     f'но с общей калорийностью не более {calories_can_eat} кКал'
+            result = (
+                f"Сегодня можно съесть что-нибудь ещё, "
+                f"но с общей калорийностью не более {calories_can_eat} кКал"
+            )
         else:
-            result = 'Хватит есть!'
+            result = "Хватит есть!"
 
         return result
 
 
 class CashCalculator(Calculator):
     """Текущие курсы валют"""
+
     USD_RATE = 76.08
     EURO_RATE = 89.94
 
@@ -54,22 +64,20 @@ class CashCalculator(Calculator):
         cash_today_remained = self.get_balance()
 
         currency_dict = {
-            'usd': {'rate': self.USD_RATE, 'currency': 'USD'},
-            'eur': {'rate': self.EURO_RATE, 'currency': 'Euro'},
-            'rub': {'rate': 1, 'currency': 'руб'},
+            "usd": [self.USD_RATE, "USD"],
+            "eur": [self.EURO_RATE, "Euro"],
+            "rub": [1, "руб"],
         }
 
-        currency_cash = self.get_currency_cash(currency_dict[abbr]["rate"])
-        abbreviation = currency_dict[abbr]["currency"]
+        currency_cash, abbreviation = currency_dict[abbr]
+        currency_cash = self.get_currency_cash(currency_cash)
 
+        if cash_today_remained == 0:
+            return "Денег нет, держись"
         if cash_today_remained > 0:
-            result = f'На сегодня осталось {currency_cash} {abbreviation}'
-        elif cash_today_remained == 0:
-            result = 'Денег нет, держись'
-        else:
-            result = f'Денег нет, держись: твой долг - {currency_cash} {abbreviation}'
-
-        return result
+            return f"На сегодня осталось {currency_cash} {abbreviation}"
+        if cash_today_remained < 0:
+            return f"Денег нет, держись: твой долг - {currency_cash} {abbreviation}"
 
 
 class Record:
@@ -78,7 +86,7 @@ class Record:
     def __init__(self, amount, comment, date=None):
         self.amount = amount
         self.comment = comment
-        if date != None:
-            self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
-        else:
+        if date is None:
             self.date = dt.date.today()
+        else:
+            self.date = dt.datetime.strptime(date, "%d.%m.%Y").date()
